@@ -1,0 +1,185 @@
+﻿@model GetCarDashboardDto
+
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary"><i class="bi bi-shield-exclamation"></i> Safety Risk Assessment</h2>
+        <a class="btn btn-secondary" asp-controller="Car" asp-action="CarDetail" asp-route-id="@Model.CarId">
+            <i class="bi bi-arrow-left"></i> Back to Car
+        </a>
+    </div>
+
+    <div class="row">
+        @foreach (var sensor in Model.Sensors)
+        {
+            <div class="col-12 mb-4">
+                <div class="card border-0 shadow">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-thermometer-half"></i> Sensor: @sensor.SensorType</h5>
+                        <span class="badge bg-@sensor.ValueEvaluation fs-6">@sensor.Value</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <strong>Errors:</strong>
+                                @if (sensor.Errors?.Any() == true)
+                                {
+                                    <div class="alert alert-warning p-2 mt-2">
+                                        @foreach (var error in sensor.Errors)
+                                        {
+                                            <p class="mb-1">
+                                                <i class="bi bi-exclamation-circle-fill text-danger"></i>
+                                                <strong>@error.Code:</strong> @error.Description
+                                            </p>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <p class="text-muted">No errors reported.</p>
+                                }
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <strong>Risk Assessment:</strong>
+                                @if (sensor.RiskAssessment != null)
+                                {
+                                    <ul class="list-group mt-2">
+                                        <li class="list-group-item">
+                                            <strong>Risk Code:</strong> <span class="badge bg-@GetCodeLabel(sensor.RiskAssessment.Column, sensor.RiskAssessment.Row)?.Color">@sensor.RiskAssessment.RiskCode</span>
+                                        </li>
+                                        <li class="list-group-item text-break">
+                                            <strong>Recommendations:</strong> @sensor.RiskAssessment.Recommendations
+                                        </li>
+                                        <li class="list-group-item">
+                                            <strong>Assessed At:</strong> @sensor.RiskAssessment.AssessedAt.ToString("g")
+                                        </li>
+                                    </ul>
+                                }
+                                else
+                                {
+                                    <p class="text-muted">No risk assessment yet.</p>
+                                }
+                            </div>
+
+                            <div class="col-md-2 text-end">
+                                <button class="btn btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRiskMatrix-@sensor.Id" aria-expanded="false" aria-controls="collapseRiskMatrix-@sensor.Id">
+                                    <i class="bi bi-graph-up-arrow"></i> Risk Matrix
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="collapse mt-3" id="collapseRiskMatrix-@sensor.Id" style="font-size: 15px;">
+                            <form asp-action="AssessRisk" method="post">
+                                <input type="hidden" name="SensorId" value="@sensor.Id" />
+
+                                <div class="mb-4">
+                                    <h4 class="text-center text-primary">Risk Matrix for Sensor: @sensor.SensorType</h4>
+                                    <table class="table table-bordered text-center align-middle">
+                                        <thead>
+                                            <tr class="table-secondary">
+                                                <th class="col-2">Likelihood / Severity</th>
+                                                @foreach (var col in new[] { 1, 2, 3, 4, 5 })
+                                                {
+                                                    <th class="col-2">@GetColumnLabel(col)</th>
+                                                }
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var row in new[] { 5, 4, 3, 2, 1 })
+                                            {
+                                                <tr>
+                                                    <td><strong>@GetRowLabel(row)</strong></td>
+                                                    @foreach (var col in new[] { 1, 2, 3, 4, 5 })
+                                                    {
+                                                        var rating = GetCodeLabel(col, row);
+                                                        if (rating != null)
+                                                        {
+                                                            var isChecked = sensor.RiskAssessment?.RiskCode == rating.Code ? "checked" : "";
+                                                            <td class="p-0">
+                                                                <input type="radio" class="btn-check" name="riskCode" required id="risk-@rating.Code-@sensor.Id" value="@rating.Code" autocomplete="off" @isChecked />
+                                                                <label class="btn btn-outline-@rating.Color w-100 border-5" for="risk-@rating.Code-@sensor.Id">@rating.Code</label>
+                                                            </td>
+                                                        }
+                                                    }
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="RecommendationsInput_@sensor.Id" class="form-label">Recommendations</label>
+                                    <textarea class="form-control" required id="RecommendationsInput_@sensor.Id" name="Recommendations" rows="3">@sensor.RiskAssessment?.Recommendations</textarea>
+                                </div>
+
+                                <button type="submit" class="btn btn-success"><i class="bi bi-save"></i> Save Assessment</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@functions {
+    private string GetRowLabel(int row)
+    {
+        return row switch
+        {
+            5 => "Frequent 5",
+            4 => "Occasional 4",
+            3 => "Remote 3",
+            2 => "Improbable 2",
+            1 => "Extremely improbable 1",
+            _ => "Unknown"
+        };
+    }
+
+    private string GetColumnLabel(int col)
+    {
+        return col switch
+        {
+            1 => "Catastrophic A",
+            2 => "Hazardous B",
+            3 => "Major C",
+            4 => "Minor D",
+            5 => "Negligible E",
+            _ => "Unknown"
+        };
+    }
+
+    private RiskRatingModel? GetCodeLabel(int col, int row)
+    {
+        var riskRatings = new Dictionary<string, RiskRatingModel>
+        {
+            { "5A", new RiskRatingModel { Row = 5, Column = 1, Color = "danger", Code = "5A" } },
+            { "5B", new RiskRatingModel { Row = 5, Column = 2, Color = "danger", Code = "5B" } },
+            { "5C", new RiskRatingModel { Row = 5, Column = 3, Color = "danger", Code = "5C" } },
+            { "5D", new RiskRatingModel { Row = 5, Column = 4, Color = "warning", Code = "5D" } },
+            { "5E", new RiskRatingModel { Row = 5, Column = 5, Color = "warning", Code = "5E" } },
+            { "4A", new RiskRatingModel { Row = 4, Column = 1, Color = "danger", Code = "4A" } },
+            { "4B", new RiskRatingModel { Row = 4, Column = 2, Color = "danger", Code = "4B" } },
+            { "4C", new RiskRatingModel { Row = 4, Column = 3, Color = "warning", Code = "4C" } },
+            { "4D", new RiskRatingModel { Row = 4, Column = 4, Color = "warning", Code = "4D" } },
+            { "4E", new RiskRatingModel { Row = 4, Column = 5, Color = "warning", Code = "4E" } },
+            { "3A", new RiskRatingModel { Row = 3, Column = 1, Color = "danger", Code = "3A" } },
+            { "3B", new RiskRatingModel { Row = 3, Column = 2, Color = "warning", Code = "3B" } },
+            { "3C", new RiskRatingModel { Row = 3, Column = 3, Color = "warning", Code = "3C" } },
+            { "3D", new RiskRatingModel { Row = 3, Column = 4, Color = "warning", Code = "3D" } },
+            { "3E", new RiskRatingModel { Row = 3, Column = 5, Color = "success", Code = "3E" } },
+            { "2A", new RiskRatingModel { Row = 2, Column = 1, Color = "warning", Code = "2A" } },
+            { "2B", new RiskRatingModel { Row = 2, Column = 2, Color = "warning", Code = "2B" } },
+            { "2C", new RiskRatingModel { Row = 2, Column = 3, Color = "warning", Code = "2C" } },
+            { "2D", new RiskRatingModel { Row = 2, Column = 4, Color = "success", Code = "2D" } },
+            { "2E", new RiskRatingModel { Row = 2, Column = 5, Color = "success", Code = "2E" } },
+            { "1A", new RiskRatingModel { Row = 1, Column = 1, Color = "warning", Code = "1A" } },
+            { "1B", new RiskRatingModel { Row = 1, Column = 2, Color = "success", Code = "1B" } },
+            { "1C", new RiskRatingModel { Row = 1, Column = 3, Color = "success", Code = "1C" } },
+            { "1D", new RiskRatingModel { Row = 1, Column = 4, Color = "success", Code = "1D" } },
+            { "1E", new RiskRatingModel { Row = 1, Column = 5, Color = "success", Code = "1E" } }
+        };
+
+        return riskRatings.Values.FirstOrDefault(r => r.Row == row && r.Column == col);
+    }
+}

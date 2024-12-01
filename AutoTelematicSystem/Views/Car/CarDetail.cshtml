@@ -1,0 +1,149 @@
+﻿@model GetCarDto
+@{
+    ViewData["Title"] = "Car Detail";
+    var riskPercent = new Random().Next(0, 101);
+}
+
+@functions {
+    public string GetRiskColor(int riskPercent)
+    {
+        int red = (int)(255 * riskPercent / 100.0);
+        int green = (int)(255 * (100 - riskPercent) / 100.0);
+        return $"rgb({red}, {green}, 0)";
+    }
+}
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<div class="container mt-4">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary">Car Details</h2>
+        <a class="btn btn-primary" asp-action="CarList"><i class="bi bi-arrow-left-circle"></i> Back to Car List</a>
+    </div>
+
+    <!-- Main Content Section -->
+    <div class="row">
+        <!-- Left Column: Car Image and Actions -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm">
+                <img src="@Model.ImageUrl" class="card-img-top rounded" alt="Car Image" style="object-fit: cover;">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-dark">@Model.Make @Model.Model (@Model.YearOfManufacture)</h5>
+                    <p><strong>License Plate:</strong> @Model.LicensePlate</p>
+                    <div class="d-grid gap-2">
+                        <a class="btn btn-warning" asp-action="CarEdit" asp-route-id="@Model.Id"><i class="bi bi-pencil-square"></i> Edit</a>
+                        <a class="btn btn-danger" asp-action="CarDelete" asp-route-id="@Model.Id"><i class="bi bi-trash"></i> Delete</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Car Information -->
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h4 class="text-secondary mb-3">Car Information</h4>
+                    <p><strong>VIN:</strong> @Model.VIN</p>
+                    <p><strong>Color:</strong> @Model.Color</p>
+                    <p><strong>Year of Manufacture:</strong> @Model.YearOfManufacture</p>
+                    <p><strong>Distance (total):</strong> 88,000 km</p>
+                    <p><strong>Distance (today):</strong> 150 km</p>
+                    <p><strong>Travelling time (today):</strong> 3 hour 23 minutes</p>
+                    <p><strong>Date of last maintenance:</strong> 11.11.2024</p>
+                </div>
+            </div>
+
+            <!-- Risk Level -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body d-flex align-items-center">
+                    <a class="btn btn-warning me-3" asp-controller="SafetyRiskAssessment" asp-action="CarDashboard" asp-route-carId="@Model.Id">
+                        <i class="bi bi-shield-exclamation"></i> Safety Risks Assessment
+                    </a>
+                    <div class="risk-bar" style="flex-grow: 1; position: relative; height: 50px; background-color: #e0e0e0;">
+                        <div id="risk-fill" style="position: absolute; height: 100%; width: @(riskPercent)%; background-color: @(GetRiskColor(riskPercent));"></div>
+                        <div style="position: relative; z-index: 1; color: black; line-height: 50px; text-align: center;">Risk Level: @riskPercent%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Section -->
+    <div class="card shadow-sm mb-4">
+        <div id="map" style="height: 300px;"></div>
+    </div>
+
+    <!-- Sensors Section -->
+    <h3 class="text-secondary mb-3">Sensors</h3>
+    <ul class="nav nav-tabs" id="sensorTabs" role="tablist">
+        @foreach (var sensor in Model.Sensors)
+        {
+            <li class="nav-item" role="presentation">
+                <a class="nav-link @(sensor.Id == Model.Sensors[0].Id ? "active" : "")"
+                   id="sensor-@sensor.Id-tab"
+                   data-bs-toggle="tab"
+                   href="#sensor-@sensor.Id"
+                   role="tab"
+                   aria-controls="sensor-@sensor.Id"
+                   aria-selected="@(sensor.Id == Model.Sensors[0].Id ? "true" : "false")">
+                    <i class="bi bi-gear-fill"></i> @sensor.SensorType
+                </a>
+            </li>
+        }
+    </ul>
+
+    <div class="tab-content mt-3">
+        @foreach (var sensor in Model.Sensors)
+        {
+            <div class="tab-pane fade @(sensor.Id == Model.Sensors[0].Id ? "show active" : "")"
+                 id="sensor-@sensor.Id"
+                 role="tabpanel"
+                 aria-labelledby="sensor-@sensor.Id-tab">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Sensor Type: @sensor.SensorType</h5>
+                        <p class="card-text"><span class="badge bg-@sensor.ValueEvaluation">@sensor.Value</span></p>
+                        <p><strong>Description:</strong> @sensor.Description</p>
+                        <p><strong>Last Updated:</strong> @(sensor.TimeStamp?.ToString("g") ?? "N/A")</p>
+
+                        <h6>Errors:</h6>
+                        @if (sensor.Errors?.Any() == true)
+                        {
+                            <ul class="list-group">
+                                @foreach (var error in sensor.Errors)
+                                {
+                                    <li class="list-group-item">
+                                        <span class="badge bg-danger me-2">@error.Timestamp</span>
+                                        @error.Code - @error.Description
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <p class="text-success">No errors reported for this sensor.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    document.getElementById('risk-fill').style.width = @riskPercent + '%';
+
+    var latitude = @Model.Latitude;
+    var longitude = @Model.Longitude;
+    var map = L.map('map').setView([latitude, longitude], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    L.marker([latitude, longitude]).addTo(map)
+        .bindPopup("@Model.LicensePlate")
+        .openPopup();
+</script>

@@ -1,0 +1,19 @@
+﻿@model GetErrorDto
+@{
+    ViewData["Title"] = "Error Detail";
+}
+
+<div class="container my-5">
+    <div class="card shadow">
+        <div class="card-body">
+            <h2 class="text-primary"><i class="bi bi-info-circle"></i> Error Details</h2>
+            <p><strong>ID:</strong> @Model.Id</p>
+            <p><strong>Code:</strong> @Model.Code</p>
+            <p><strong>Description:</strong> @Model.Description</p>
+
+            <a class="btn btn-secondary mt-3" asp-action="ErrorList" asp-route-sensorTypeId="@Model.SensorTypeId">
+                <i class="bi bi-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,26 @@
+﻿@model GetErrorDto
+@{
+    ViewData["Title"] = "Delete Error";
+}
+
+<div class="container my-5">
+    <div class="card shadow-lg p-4">
+        <h2 class="card-title text-danger text-center mb-4">Delete Error</h2>
+        <h4 class="text-center text-muted mb-4">Are you sure you want to delete this error?</h4>
+
+        <div class="card-body">
+            <p><strong>Code:</strong> @Model.Code</p>
+            <p><strong>Description:</strong> @Model.Description</p>
+
+            <form asp-action="ErrorDelete" method="post" class="text-end">
+                <input type="hidden" asp-for="Id" />
+                <a class="btn btn-secondary" asp-action="ErrorList" asp-route-sensorTypeId="@Model.SensorTypeId">
+                    <i class="bi bi-arrow-left"></i> Cancel
+                </a>
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-trash-fill"></i> Delete
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

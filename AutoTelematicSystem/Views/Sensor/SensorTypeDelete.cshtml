@@ -1,0 +1,26 @@
+﻿@model GetSensorTypeDto
+@{
+    ViewData["Title"] = "Delete Sensor Type";
+}
+
+<div class="container my-5">
+    <div class="card shadow-lg p-4">
+        <h2 class="card-title text-danger text-center mb-4">Delete Sensor Type</h2>
+        <h4 class="text-center text-muted mb-4">Are you sure you want to delete this sensor type?</h4>
+
+        <div class="card-body">
+            <h5 class="card-title"><strong>Name:</strong> @Model.Name</h5>
+            <p><strong>Description:</strong> @Model.Description</p>
+
+            <form asp-action="SensorTypeDelete" method="post" class="text-end">
+                <input type="hidden" asp-for="Id" />
+                <a class="btn btn-secondary" asp-action="SensorTypeList">
+                    <i class="bi bi-arrow-left"></i> Cancel
+                </a>
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-trash-fill"></i> Delete
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

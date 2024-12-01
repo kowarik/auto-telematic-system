@@ -1,0 +1,97 @@
+﻿@model IEnumerable<GetCarDto>
+
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<div class="container mt-3">
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center">
+                            <h5>Total Cars</h5>
+                            <p class="display-6" id="cars-on-move">10</p>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h5>Low Risk (&lt; 25%)</h5>
+                            <p class="display-6 text-success" id="low-risk">8</p>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h5>Medium Risk (25%-75%)</h5>
+                            <p class="display-6 text-warning" id="medium-risk">1</p>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h5>High Risk (&gt; 75%)</h5>
+                            <p class="display-6 text-danger" id="high-risk">1</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div id="map" class="card mb-3" style="height: 550px;"></div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body" id="car-info">
+                    <h4 class="card-title">Car Information</h4>
+                    <div id="car-details" class="card-text">
+                        <p>Select a marker on the map to see details.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    var cars = @Html.Raw(Json.Serialize(Model));
+
+    var map = L.map('map').setView([50.4501, 30.5234], 13); // Центральная точка карты
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    function getRiskColor(riskPercent) {
+        var red = parseInt(255 * riskPercent / 100.0);
+        var green = parseInt(255 * (100 - riskPercent) / 100.0);
+        return `rgb(${red}, ${green}, 0)`;
+    }
+
+    function updateCarDetails(car) {
+        var riskPercent = Math.floor(Math.random() * 101);
+        var riskColor = getRiskColor(riskPercent);
+
+        document.getElementById('car-details').innerHTML = `
+                    <p><strong>License Plate:</strong> ${car.licensePlate}</p>
+                    <p><strong>Model:</strong> ${car.model}</p>
+                    <p><strong>Make:</strong> ${car.make}</p>
+                        <img src="${car.imageUrl}" alt="Car Image" class="img-fluid" style="max-height: 200px;"/>
+                    <div class="risk-block card text-white text-center p-3 mb-2">
+                        <div class="risk-bar" style="position: relative; width: 100%; height: 50px; background-color: #e0e0e0;">
+                            <div id="risk-fill" style="position: absolute; height: 100%; width: ${riskPercent}%; background-color: ${riskColor};"></div>
+                            <div style="position: relative; z-index: 1; color: black; line-height: 50px;">Risk Level: ${riskPercent}%</div>
+                        </div>
+                    </div>
+                    <button onclick="location.href='/Car/CarDetail/${car.id}'" class="btn btn-primary mt-2 col-12 mx-auto">Car Detail</button>
+                `;
+    }
+
+    cars.forEach(car => {
+        var marker = L.marker([car.latitude, car.longitude]).addTo(map);
+        marker.bindPopup(`<b>${car.licensePlate}</b>`);
+        marker.on('click', function () {
+            updateCarDetails(car);
+        });
+    });
+</script>

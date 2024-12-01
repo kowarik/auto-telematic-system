@@ -1,0 +1,42 @@
+﻿@model GetSensorTypeDto
+@{
+    ViewData["Title"] = "Sensor Type Detail";
+}
+
+<div class="container my-5">
+    <a class="btn btn-secondary mb-3" asp-action="SensorTypeList">
+        <i class="bi bi-arrow-left"></i> Back to List
+    </a>
+    <div class="card shadow">
+        <div class="card-body">
+            <h2 class="text-primary"><i class="bi bi-info-circle"></i> @Model.Name</h2>
+            <p><strong>ID:</strong> @Model.Id</p>
+            <p><strong>Description:</strong> @Model.Description</p>
+
+            <h4 class="mt-4">Errors</h4>
+            <a class="btn btn-primary mb-3" asp-action="ErrorList" asp-route-sensorTypeId="@Model.Id">
+                <i class="bi bi-wrench"></i> Manage Errors
+            </a>
+
+            <table class="table table-striped table-hover shadow-sm">
+                <thead class="table-secondary">
+                    <tr>
+                        <th>ID</th>
+                        <th>Code</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var error in Model.Errors)
+                    {
+                        <tr>
+                            <td>@error.Id</td>
+                            <td>@error.Code</td>
+                            <td>@error.Description</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
